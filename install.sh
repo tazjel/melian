@@ -7,7 +7,7 @@ builddir="/usr/local/src/mele"		# Set the building directory
 uboot="sun4i"						# Set the desired u-boot version. See here: https://github.com/hno/uboot-allwinner/wiki
 kernel="allwinner-v3.0-android-v2"	# Select the desired kernel branch. See here: http://rhombus-tech.net/allwinner_a10/kernel_compile/
 network="static"					# Either static or dhcp
-networkbase="10.0.0"				# Set first three octets
+networkbase="192.168.1"				# Set first three octets
 networkip="71"						# Set final octet
 server="y"							# y or n / enable server mode? Deactivate GPU and free ram
 misdn="y"							# y or n / add mISDN module to kernel
@@ -15,6 +15,8 @@ tun="y"								# y or n / also compile the tun module - required for openvpn
 password="password"					# set root password in the sdcard
 locales="en_US.UTF-8"				# set your locales
 debian="wheezy"						# Set your Debian version
+arm="armhf"							# Set armel or armhf (armhf only for wheezy)
+
 
 # More info at http://rhombus-tech.net/allwinner_a10/source_code/
 # More debian specific info at http://rhombus-tech.net/allwinner_a10/hacking_the_mele_a1000/Building_Debian_From_Source_Code_for_Mele/
@@ -50,7 +52,7 @@ function initializeFunc
 	# Prepare environment, download necessary packages
 	apt-get update
 	apt-get -y dist-upgrade
-	apt-get -y install git-core gcc-arm-linux-gnueabi build-essential qemu qemu-user-static util-linux uboot-mkimage
+	apt-get -y install git-core gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf build-essential qemu qemu-user-static util-linux uboot-mkimage
 	mkdir -p ${builddir}
 }
 
@@ -65,7 +67,7 @@ function ubootFunc
 	fi
 	cd ${curDir}
 	git checkout ${uboot}
-	make ${uboot} CROSS_COMPILE=arm-linux-gnueabi-
+	make ${uboot} CROSS_COMPILE=arm-linux-gnueabi${hf}-
 	echo "Done building u-boot"
 }
 
@@ -139,7 +141,7 @@ function kernelFunc
 	fi
 	cd ${curDir}
 	git checkout ${kernel}
-	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- sun4i_defconfig
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi${hf}- sun4i_defconfig
 	cp -a ".config" "config.orig"
 	wget "https://raw.github.com/cnxsoft/a10-config/master/kernel/mele-a1000-server.config"  -O "${curDir}/config.server"
 
@@ -173,8 +175,8 @@ function kernelFunc
 		;;
 	esac
 
-	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j16 uImage modules
-	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- INSTALL_MOD_PATH=output modules_install
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi${hf}- uImage modules
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi${hf}- INSTALL_MOD_PATH=output modules_install
 }
 
 
@@ -190,7 +192,7 @@ function rootfsFunc
 	dd if="/dev/zero" of="rootfs.img" bs=1M count=1024
 	mkfs.ext4 -F "rootfs.img"
 	mount -o loop "rootfs.img" "mnt"
-	debootstrap --verbose --arch armel --variant=minbase --foreign ${debian} "mnt" http://ftp.debian.org/debian
+	debootstrap --verbose --arch=${arm} --variant=minbase --foreign ${debian} "mnt" http://ftp.debian.org/debian
 	modprobe binfmt_misc
 	cp "/usr/bin/qemu-arm-static" "mnt/usr/bin"
 	mkdir "mnt/dev/pts"
@@ -201,8 +203,8 @@ function rootfsFunc
 
 	echo "deb http://security.debian.org/ ${debian}/updates main contrib non-free
 deb-src http://security.debian.org/ ${debian}/updates main contrib non-free
-deb http://ftp.debian.org/debian/  ${debian} main contrib non-free
-deb-src http://ftp.debian.org/debian/  ${debian} main contrib non-free" > "/etc/apt/sources.list";
+deb http://ftp.debian.org/debian/ ${debian} main contrib non-free
+deb-src http://ftp.debian.org/debian/ ${debian} main contrib non-free" > "/etc/apt/sources.list";
 
 	apt-get update;
 	exit;
@@ -292,7 +294,7 @@ function createFunc
 	mount "${sdcard}2" "${curDir2}"
 	mount -o loop "${builddir}/rootfs/rootfs.img" "${builddir}/rootfs/mnt"
 	cd "${builddir}/linux-allwinner"
-	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- INSTALL_MOD_PATH="../rootfs/mnt" modules_install
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi${hf}- INSTALL_MOD_PATH="../rootfs/mnt" modules_install
 	cp -a "${builddir}/rootfs/mnt/"* "${curDir2}/"
 	umount "${curDir2}"
 	umount "${builddir}/rootfs/mnt"
@@ -343,27 +345,39 @@ function fullFunc
 function downloadFunc
 {
 	apt-get -y install git-core
-	mkdir -p ${builddir}
+	mkdir -p "${builddir}"
 	curDir="${builddir}/uboot-allwinner"
 	if [ ! -d "${curDir}" ]; then
-		cd ${builddir}
+		cd "${builddir}"
 		git clone git://github.com/hno/uboot-allwinner.git
 	fi
 	curDir="${builddir}/sunxi-tools"
 	if [ ! -d "${curDir}" ]; then
-		cd ${builddir}
+		cd "${builddir}"
 		git clone https://github.com/amery/sunxi-tools
 	fi
 	curDir="${builddir}/linux-allwinner"
 	if [ ! -d "${curDir}" ]; then
-		cd ${builddir}
+		cd "${builddir}"
 		git clone git://github.com/amery/linux-allwinner.git
 	fi
 	echo "Done"
 }
 
 
-case "$2" in
+
+case "${arm}" in
+armel) echo "Setting to armel"
+	hf=""
+	;;
+*) echo "Setting to armhf"
+	hf="hf"
+	;;
+esac
+
+
+
+case "${2}" in
 init)  echo "Installting required packages and modifications"
 	initializeFunc
     echo "Initializing completed... please continue with one of the other options"
@@ -372,7 +386,7 @@ esac
 
 
 
-case "$1" in
+case "${1}" in
 initialize)  echo "Installting required packages and modifications"
 	initializeFunc
     echo "Initializing completed... please continue with one of the other options"
