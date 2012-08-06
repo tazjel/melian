@@ -160,6 +160,7 @@ function kernelFunc
 
 	case "${misdn}" in
 	y)  echo "Adding mISDN"
+		updateSettings ".config" 'CONFIG_ISDN' 'CONFIG_ISDN=y'
 		updateSettings ".config" 'CONFIG_MISDN' 'CONFIG_MISDN=m'
 		updateSettings ".config" 'CONFIG_MISDN_HFCUSB' 'CONFIG_MISDN_HFCUSB=m'
 		;;
