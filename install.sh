@@ -52,7 +52,7 @@ function initializeFunc
 	# Prepare environment, download necessary packages
 	apt-get update
 	apt-get -y dist-upgrade
-	apt-get -y install git-core gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf build-essential qemu qemu-user-static util-linux uboot-mkimage
+	apt-get -y install git-core gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf build-essential qemu qemu-user-static util-linux uboot-mkimage pkg-config libusb-1.0.0-dev
 	mkdir -p ${builddir}
 }
 
