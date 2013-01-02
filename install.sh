@@ -78,7 +78,7 @@ function scriptFunc
 	curDir="${builddir}/sunxi-tools"
 	if [ ! -d "${curDir}" ]; then
 		cd ${builddir}
-		git clone https://github.com/amery/sunxi-tools
+		git clone https://github.com/linux-sunxi/sunxi-tools.git
 	fi
 
 	cd ${curDir}
