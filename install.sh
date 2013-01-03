@@ -134,7 +134,7 @@ setenv bootcmd 'run setargs boot_mmc'" > "boot.cmd"
 
 function kernelFunc
 {
-	curDir="${builddir}/linux-allwinner"
+	curDir="${builddir}/linux-sunxi"
 	if [ ! -d "${curDir}" ]; then
 		cd ${builddir}
 		git clone https://github.com/linux-sunxi/linux-sunxi.git
