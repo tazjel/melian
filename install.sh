@@ -137,7 +137,7 @@ function kernelFunc
 	curDir="${builddir}/linux-allwinner"
 	if [ ! -d "${curDir}" ]; then
 		cd ${builddir}
-		git clone git://github.com/amery/linux-allwinner.git
+		git clone https://github.com/linux-sunxi/linux-sunxi.git
 	fi
 	cd ${curDir}
 	git checkout ${kernel}
